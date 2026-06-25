@@ -64,7 +64,6 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-
     stop_words = load_stop_words()
     text_preprocessor = TextPreprocessor(stop_words)
     inverted_index = InvertedIndex(text_preprocessor)
