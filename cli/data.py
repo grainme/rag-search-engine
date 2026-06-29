@@ -1,9 +1,10 @@
+from collections import Counter
 import json
 import pickle
 from pathlib import Path
+from typing import Any
 
 from models import Movie, SearchResponse
-from typing_extensions import Any, Counter
 
 DATA_DIRECTORY = Path(__file__).resolve().parent.parent / "data"
 CACHE_DIRECTORY = Path(__file__).resolve().parent.parent / "cache"
@@ -15,6 +16,7 @@ CACHE_INDEX = CACHE_DIRECTORY / "index.pkl"
 CACHE_DOCMAP = CACHE_DIRECTORY / "docmap.pkl"
 CACHE_TERM_FREQUENCIES = CACHE_DIRECTORY / "term_frequencies.pkl"
 CACHE_DOC_LENGTH = CACHE_DIRECTORY / "doc_lengths.pkl"
+CACHE_MOVIE_EMBEDDINGS = CACHE_DIRECTORY / "movie_embeddings.npy"
 
 
 def load_movies(path: Path = MOVIES_PATH) -> list[Movie]:
