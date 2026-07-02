@@ -1,9 +1,6 @@
 import re
 
 
-#
-# Low level helpers
-#
 def chunk_doc(text: str, chunk_size: int, overlap: int) -> list[str]:
     word_chunks = _chunk_items(text.split(), chunk_size, overlap)
     return [" ".join(words) for words in word_chunks]
@@ -17,7 +14,7 @@ def semantic_chunk_doc(text: str, chunk_size: int, overlap: int) -> list[str]:
 
 
 def _split_sentences(text: str) -> list[str]:
-    return [sentence for sentence in re.split(r"(?<=[.!?])\s+", text) if sentence]
+    return [_normalize(sentence) for sentence in re.split(r"(?<=[.!?])\s+", text) if sentence]
 
 
 def _chunk_items(items: list[str], chunk_size: int, overlap: int) -> list[list[str]]:
@@ -38,3 +35,7 @@ def _chunk_items(items: list[str], chunk_size: int, overlap: int) -> list[list[s
         chunks.append(chunk)
 
     return chunks
+
+
+def _normalize(text: str) -> str:
+    return text.strip()
