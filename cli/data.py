@@ -1,6 +1,6 @@
-from collections import Counter
 import json
 import pickle
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +17,8 @@ CACHE_DOCMAP = CACHE_DIRECTORY / "docmap.pkl"
 CACHE_TERM_FREQUENCIES = CACHE_DIRECTORY / "term_frequencies.pkl"
 CACHE_DOC_LENGTH = CACHE_DIRECTORY / "doc_lengths.pkl"
 CACHE_MOVIE_EMBEDDINGS = CACHE_DIRECTORY / "movie_embeddings.npy"
+CHUNK_EMBEDDINGS_PATH = CACHE_DIRECTORY / "chunk_embeddings.npy"
+CHUNK_METADATA_PATH = CACHE_DIRECTORY / "chunk_metadata.json"
 
 
 def load_movies(path: Path = MOVIES_PATH) -> list[Movie]:
@@ -55,9 +57,7 @@ def read_docmap(path: Path = CACHE_DOCMAP):
     return loaded_docmap_data
 
 
-def write_term_frequencies(
-    term_frquencies: Counter, path: Path = CACHE_TERM_FREQUENCIES
-):
+def write_term_frequencies(term_frquencies: Counter, path: Path = CACHE_TERM_FREQUENCIES):
     path.parent.mkdir(exist_ok=True)
     with path.open("wb") as file:
         pickle.dump(term_frquencies, file)

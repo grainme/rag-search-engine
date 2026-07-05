@@ -45,4 +45,5 @@ def search_chunked(query: str, limit: int):
     chunked_semantic_search = ChunkedSemanticSearch()
     _ = chunked_semantic_search.load_or_create_chunk_embeddings(documents)
     results = chunked_semantic_search.search_chunks(query, limit)
-    print(results)
+    for res in results:
+        print(res["title"], res["score"], sep=" - ")

@@ -1,19 +1,16 @@
 import argparse
 
-from constants import BM25_B, BM25_K1
+from constants import BM25_B, BM25_K1, DEFAULT_SEARCH_LIMIT
 from lib.keyword_search import (
-    bm25_idf_command,
-    bm25_search,
-    bm25_tf_command,
-    build_command,
-    idf_command,
-    search_command,
-    tf_command,
-    tfidf_command,
+    bm25_idf,
+    bm25_keyword_search,
+    bm25_tf,
+    build_index,
+    inverse_document_frequency,
+    keyword_search,
+    term_frequency,
+    tfidf_score,
 )
-from preprocessing import InvertedIndex, TextPreprocessor
-
-from data import load_stop_words
 
 
 def main() -> None:
@@ -22,6 +19,9 @@ def main() -> None:
 
     search_parser = subparsers.add_parser("search", help="Search movies using BM25")
     search_parser.add_argument("query", type=str, help="Search query")
+    search_parser.add_argument(
+        "--limit", type=int, nargs="?", default=DEFAULT_SEARCH_LIMIT
+    )
 
     subparsers.add_parser("build", help="Build inverted index structure")
 
@@ -60,67 +60,28 @@ def main() -> None:
     )
     bm25search_parser.add_argument("query", type=str, help="Search query")
     bm25search_parser.add_argument(
-        "limit", type=int, nargs="?", default=5, help="Search query"
+        "--limit", type=int, nargs="?", default=DEFAULT_SEARCH_LIMIT
     )
 
     args = parser.parse_args()
-    stop_words = load_stop_words()
-    text_preprocessor = TextPreprocessor(stop_words)
-    inverted_index = InvertedIndex(text_preprocessor)
 
     match args.command:
         case "search":
-            result = search_command(args.query, text_preprocessor, inverted_index)
-            for idx, movie in enumerate(result):
-                print(f"{idx + 1}. {movie.title}")
+            keyword_search(args.query, args.limit)
         case "build":
-            build_command(inverted_index)
+            build_index()
         case "tf":
-            doc_id = args.doc_id
-            term = args.term
-            term_token = text_preprocessor.tokenize_single_term(term)
-
-            tf = tf_command(inverted_index, doc_id, term_token)
-            print(tf)
+            term_frequency(args.doc_id, args.term)
         case "idf":
-            term = args.term
-            term_token = text_preprocessor.tokenize_single_term(term)
-
-            idf = idf_command(inverted_index, term_token)
-            print(f"Inverse document frequency of '{args.term}': {idf:.2f}")
+            inverse_document_frequency(args.term)
         case "tfidf":
-            doc_id = args.doc_id
-            term = args.term
-            term_token = text_preprocessor.tokenize_single_term(term)
-
-            tf_idf = tfidf_command(inverted_index, doc_id, term_token)
-            print(
-                f"TF-IDF score of '{args.term}' in document '{args.doc_id}': {tf_idf:.2f}"
-            )
+            tfidf_score(args.doc_id, args.term)
         case "bm25idf":
-            term = args.term
-            term_token = text_preprocessor.tokenize_single_term(term)
-
-            bm25idf = bm25_idf_command(inverted_index, term_token)
-            print(f"BM25 IDF score of '{args.term}': {bm25idf:.2f}")
+            bm25_idf(args.term)
         case "bm25tf":
-            doc_id = args.doc_id
-            term = args.term
-            k1 = args.k1
-            b = args.b
-            term_token = text_preprocessor.tokenize_single_term(term)
-
-            bm25tf = bm25_tf_command(inverted_index, doc_id, term_token, k1, b)
-            print(
-                f"BM25 TF score of '{args.term}' in document '{args.doc_id}': {bm25tf:.2f}"
-            )
+            bm25_tf(args.doc_id, args.term, args.k1, args.b)
         case "bm25search":
-            query = args.query
-            limit = args.limit
-
-            result = bm25_search(inverted_index, query, limit)
-            for movie, score in result:
-                print(f"({movie.id}) {movie.title} - Score: {score:.2f}")
+            bm25_keyword_search(args.query, args.limit)
         case _:
             parser.print_help()
 

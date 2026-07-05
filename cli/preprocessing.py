@@ -1,6 +1,5 @@
 import math
 import string
-import sys
 from collections import Counter
 
 from constants import BM25_B, BM25_K1
@@ -9,6 +8,7 @@ from nltk.stem import PorterStemmer
 
 from data import (
     load_movies,
+    load_stop_words,
     read_doc_length,
     read_docmap,
     read_index,
@@ -68,16 +68,24 @@ class InvertedIndex:
         write_doc_length(self.doc_lengths)
 
     def load(self):
+        self.index = read_index()
+        self.docmap = read_docmap()
+        self.term_frequencies = read_term_frequencies()
+        self.doc_lengths = read_doc_length()
+
+    def load_or_build(self) -> None:
         try:
-            self.index = read_index()
-            self.docmap = read_docmap()
-            self.term_frequencies = read_term_frequencies()
-            self.doc_lengths = read_doc_length()
-        except Exception as e:
-            print("file not found:", e)
-            sys.exit(1)
+            self.load()
+        except FileNotFoundError:
+            self.build()
+            self.save()
 
     def build(self):
+        self.index = {}
+        self.docmap = {}
+        self.term_frequencies = Counter()
+        self.doc_lengths = {}
+
         movies = load_movies()
         for movie in movies:
             doc_id = movie.id
@@ -175,3 +183,9 @@ def remove_punctuation(text: str) -> str:
 
 def normalize_text(text: str) -> str:
     return remove_punctuation(text.lower())
+
+
+def create_inverted_index() -> InvertedIndex:
+    stop_words = load_stop_words()
+    text_preprocessor = TextPreprocessor(stop_words)
+    return InvertedIndex(text_preprocessor)

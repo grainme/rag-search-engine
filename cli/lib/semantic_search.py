@@ -1,27 +1,28 @@
 import json
-from pathlib import Path
 from typing import Any, NotRequired, TypedDict
 
 import numpy as np
-from constants import DEFAULT_MODEL_NAME, DEFAULT_SEARCH_LIMIT, DOCUMENT_PREVIEW_LENGTH
+from constants import (
+    DEFAULT_MODEL_NAME,
+    DEFAULT_SEARCH_LIMIT,
+    DOCUMENT_PREVIEW_LENGTH,
+    SCORE_PRECISION,
+)
 from lib.chunk_utils import semantic_chunk_doc
 from models import Movie
 from numpy.typing import NDArray
 from sentence_transformers import SentenceTransformer
 
-from data import CACHE_MOVIE_EMBEDDINGS, load_movies
+from data import CACHE_MOVIE_EMBEDDINGS, CHUNK_EMBEDDINGS_PATH, CHUNK_METADATA_PATH, load_movies
 
 Embedding = NDArray[np.float32]
-CHUNK_EMBEDDINGS_PATH = Path("cache/chunk_embeddings.npy")
-CHUNK_METADATA_PATH = Path("cache/chunk_metadata.json")
-SCORE_PRECISION = 4
 
 
 class SearchResult(TypedDict):
     score: float
     title: str
     description: str
-    id: NotRequired[int]
+    id: int
     document: NotRequired[str]
     metadata: NotRequired[dict[str, Any]]
 
@@ -124,7 +125,6 @@ class ChunkedSemanticSearch(SemanticSearch):
                 continue
 
             current_chunks = semantic_chunk_doc(doc.description, chunk_size=4, overlap=1)
-            chunks.extend(current_chunks)
 
             for chunk_idx, chunk in enumerate(current_chunks):
                 chunks.append(chunk)
@@ -163,11 +163,11 @@ class ChunkedSemanticSearch(SemanticSearch):
             with CHUNK_METADATA_PATH.open("r") as f:
                 data = json.load(f)
                 self.chunk_metadata = data["chunks"]
-            return self.chunk_embeddings
+            if self.chunk_metadata and len(self.chunk_embeddings) == len(self.chunk_metadata):
+                return self.chunk_embeddings
 
         return self.build_chunk_embeddings(documents)
 
-    # TODO: ugly code, refactor this "Chunked Semantic Search" - ch5/L5
     def search_chunks(self, query: str, limit: int = 10) -> list[SearchResult]:
         if self.chunk_embeddings is None or self.chunk_metadata is None or self.documents is None:
             raise ValueError(
