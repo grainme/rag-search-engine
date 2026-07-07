@@ -39,6 +39,7 @@ def main() -> None:
         choices=["individual", "batch", "cross_encoder"],
         help="Query enhancement method",
     )
+    rrf_search_parser.add_argument("--evaluate", type=bool, nargs="?", default=False)
 
     args = parser.parse_args()
 

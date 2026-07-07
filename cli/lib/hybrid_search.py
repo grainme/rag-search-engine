@@ -1,7 +1,9 @@
 from time import sleep
+from unittest import result
 
 from constants import DOCUMENT_PREVIEW_LENGTH
 from lib.semantic_search import ChunkedSemanticSearch, SearchResult
+from llm import enhance_query, evaluate_rrf_results, rerank_batch, rerank_individual
 from models import (
     EnhanceMethod,
     Movie,
@@ -11,7 +13,6 @@ from models import (
 )
 from preprocessing import create_inverted_index
 from sentence_transformers import CrossEncoder
-from test_llm import enhance_query, rerank_batch, rerank_individual
 
 from data import load_movies
 
@@ -88,6 +89,10 @@ class HybridSearch:
             semantic_search_results, key=lambda x: x["score"], reverse=True
         )
 
+        # [#7] debugging
+        print("Keyword search results:", [r[0].title for r in bm25_results_sorted[:10]])
+        print("Semantic search results:", [r["title"] for r in semantic_search_results_sorted[:10]])
+
         bm25_ranks_by_doc_id = {
             movie.id: idx + 1 for idx, (movie, _) in enumerate(bm25_results_sorted)
         }
@@ -114,7 +119,7 @@ class HybridSearch:
 
         results = sorted(list(doc_scores), key=lambda k: doc_scores[k]["rrf_score"], reverse=True)
 
-        return [doc_scores[k] for k in results]
+        return [doc_scores[k] for k in results][:limit]
 
 
 def _rrf_score(rank: int, k: int = 60) -> float:
@@ -139,8 +144,6 @@ def _normalize(values: list) -> list[float]:
 
 
 ## FOR COMMANDS
-
-
 def rrf_search(
     query: str,
     k: int,
@@ -148,12 +151,17 @@ def rrf_search(
     enhance: EnhanceMethod,
     rerank_method: RerankMethod,
 ) -> None:
-    output_limit = limit
+    # [#1] debugging
+    print("original query:", query)
 
+    output_limit = limit
     if enhance:
         pre_query = query
         query = enhance_query(enhance, pre_query)
         print(f"Enhanced query ({enhance}): '{pre_query}' -> '{query}'\n")
+
+    # [#2] debugging
+    print("enhanced query:", query)
 
     if rerank_method:
         limit = 5 * limit
@@ -162,6 +170,9 @@ def rrf_search(
     hybrid_search = HybridSearch(load_movies())
 
     results: list[RRFSearchResult] = hybrid_search.rrf_search(query, k, limit)[:limit]
+
+    # [#3] debugging
+    print("rrf results:", [(r["doc"].title, r["rrf_score"]) for r in results[:5]])
 
     if rerank_method:
         if rerank_method == "individual":
@@ -213,6 +224,9 @@ def rrf_search(
                 results_reranked, key=lambda x: x.get("cross_encoder_score", 0), reverse=True
             )
 
+    # [#4] debugging
+    print("reranked results:", [(r["doc"].title, r["rrf_score"]) for r in results[:10]])
+
     print(f"Reciprocal Rank Fusion Results for '{query}' (k={k}):\n")
     for idx, entry in enumerate(results[:output_limit], start=1):
         doc: Movie = entry["doc"]
@@ -233,6 +247,11 @@ def rrf_search(
         print(f"   RRF Score: {rrf_score:.3f}")
         print(f"   BM25 Rank: {bm25_rank}, Semantic Rank: {semantic_rank}")
         print(f"   {doc.description[:DOCUMENT_PREVIEW_LENGTH]}\n")
+
+    llm_eval = evaluate_rrf_results(query, results[:output_limit])
+    for idx, res in enumerate(results[:output_limit], start=1):
+        doc_title = res["doc"].title
+        print(f"{idx}. {doc_title}: {llm_eval[idx]}/3")
 
 
 def weighted_search(query: str, alpha: float, limit: int) -> None:
