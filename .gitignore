@@ -12,3 +12,4 @@ wheels/
 /cache
 .pytest*
 uv.lock
+.env

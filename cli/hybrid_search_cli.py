@@ -1,6 +1,6 @@
 import argparse
 
-from lib.hybrid_search import normalize, weighted_search
+from lib.hybrid_search import normalize, rrf_search, weighted_search
 
 
 def main() -> None:
@@ -17,6 +17,29 @@ def main() -> None:
     weighted_search_parser.add_argument("--alpha", type=float, nargs="?", default=0.5)
     weighted_search_parser.add_argument("--limit", type=int, nargs="?", default=5)
 
+    rrf_search_parser = subparser.add_parser("rrf-search", help="RRF search with configurable k")
+    rrf_search_parser.add_argument("query", type=str)
+    rrf_search_parser.add_argument(
+        "-k",
+        type=int,
+        nargs="?",
+        default=60,
+        help="RRF k parameter controlling weight distribution (default=60)",
+    )
+    rrf_search_parser.add_argument("--limit", type=int, nargs="?", default=5)
+    rrf_search_parser.add_argument(
+        "--enhance",
+        type=str,
+        choices=["spell", "rewrite", "expand"],
+        help="Query enhancement method",
+    )
+    rrf_search_parser.add_argument(
+        "--rerank-method",
+        type=str,
+        choices=["individual", "batch", "cross_encoder"],
+        help="Query enhancement method",
+    )
+
     args = parser.parse_args()
 
     match args.command:
@@ -24,6 +47,8 @@ def main() -> None:
             normalize(args.inputs)
         case "weighted-search":
             weighted_search(args.query, args.alpha, args.limit)
+        case "rrf-search":
+            rrf_search(args.query, args.k, args.limit, args.enhance, args.rerank_method)
         case _:
             parser.print_help()
 
