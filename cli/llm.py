@@ -251,3 +251,18 @@ def evaluate_rrf_results(query: str, results: list) -> list:
         raise ValueError("empty response")
 
     return json.loads(content.strip())
+
+
+def ask_llm(prompt: str):
+    response: ChatCompletion = client.chat.completions.create(
+        model="google/gemini-2.5-flash-lite",
+        messages=[
+            {
+                "role": "user",
+                "content": prompt,
+            }
+        ],
+    )
+
+    assert response.choices[0].message.content is not None
+    return response.choices[0].message.content

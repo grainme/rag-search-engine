@@ -78,7 +78,7 @@ class HybridSearch:
 
         return [doc_scores[k] for k in results]
 
-    def rrf_search(self, query: str, k: int, limit: int = 10) -> list[RRFSearchResult]:
+    def rrf_search(self, query: str, k: int = 60, limit: int = 10) -> list[RRFSearchResult]:
         bm25_results: list[tuple[Movie, float]] = self._bm25_search(query, 500 * limit)
         semantic_search_results: list[SearchResult] = self.semantic_search.search_chunks(
             query, 500 * limit
